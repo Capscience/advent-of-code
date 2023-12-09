@@ -100,7 +100,8 @@ humidity-to-location map:
 
     #[test]
     fn test_get_seed_location() {
-        let maps: [Vec<(i64, i64, i64)>; 7] = create_maps(&INPUT.split("\n\n").collect::<Vec<&str>>()[1..]);
+        let maps: [Vec<(i64, i64, i64)>; 7] =
+            create_maps(&INPUT.split("\n\n").collect::<Vec<&str>>()[1..]);
         assert_eq!(get_seed_location(79, &maps), 82);
         assert_eq!(get_seed_location(14, &maps), 43);
         assert_eq!(get_seed_location(55, &maps), 86);
