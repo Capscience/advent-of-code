@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-
 /// Day 7: Camel Cards, Part 1
+use std::collections::HashMap;
 
 const FIVE_OF_A_KIND: u32 = 7;
 const FOUR_OF_A_KIND: u32 = 6;
