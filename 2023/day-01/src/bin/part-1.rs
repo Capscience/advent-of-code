@@ -59,6 +59,9 @@ mod tests {
         assert_eq!(decode_line("pqr3stu8vwx"), Ok(38));
         assert_eq!(decode_line("a1b2c3d4e5f"), Ok(15));
         assert_eq!(decode_line("treb7uchet"), Ok(77));
-        assert_eq!(decode_line("this should not work"), Err(String::from("No digits found in line")));
+        assert_eq!(
+            decode_line("this should not work"),
+            Err(String::from("No digits found in line"))
+        );
     }
 }
