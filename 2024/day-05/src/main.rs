@@ -12,7 +12,31 @@ fn main() {
 
     // `rules` contains all page numbers (`Vec<u32>`) that must come after the key
     let rules = parse_rules(input.next().expect("Input should contain rules."));
-    let updates = parse_updates(input.next().expect("Input should contain updates."), &rules);
+    let mut updates = parse_updates(input.next().expect("Input should contain updates."), &rules);
+
+    println!("Part 1: {}", part_1(&updates));
+    println!("Part 2: {}", part_2(&mut updates));
+}
+
+fn part_1(updates: &Vec<Vec<Page>>) -> u32 {
+    let mut sum = 0;
+    for update in updates {
+        if is_ordered(&update) {
+            sum += update[update.len() / 2].number;
+        }
+    }
+    sum
+}
+
+fn part_2(updates: &mut Vec<Vec<Page>>) -> u32 {
+    let mut sum = 0;
+    for update in updates {
+        if !is_ordered(&update) {
+            update.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            sum += update[update.len() / 2].number;
+        }
+    }
+    sum
 }
 
 fn parse_rules(input: &str) -> HashMap<u32, Vec<u32>> {
@@ -64,17 +88,35 @@ impl PartialEq for Page<'_> {
 
 impl PartialOrd for Page<'_> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        let self_order_vec = self.ordering_rules.get(&self.number);
+        let other_order_vec = self.ordering_rules.get(&other.number);
         if self == other {
             return Some(std::cmp::Ordering::Equal);
-        } else if self
-            .ordering_rules
-            .get(&self.number)
-            .unwrap()
-            .contains(&other.number)
-        {
-            return Some(std::cmp::Ordering::Less);
+        } else if self_order_vec.is_some() {
+            match self_order_vec.unwrap().contains(&other.number) {
+                true => return Some(std::cmp::Ordering::Less),
+                false => {
+                    if other_order_vec.is_some() && other_order_vec.unwrap().contains(&self.number)
+                    {
+                        return Some(std::cmp::Ordering::Greater);
+                    } else {
+                        return None;
+                    }
+                }
+            }
+        } else if other_order_vec.is_some() {
+            match other_order_vec.unwrap().contains(&self.number) {
+                true => return Some(std::cmp::Ordering::Greater),
+                false => {
+                    if self_order_vec.is_some() && self_order_vec.unwrap().contains(&other.number) {
+                        return Some(std::cmp::Ordering::Less);
+                    } else {
+                        return None;
+                    }
+                }
+            }
         } else {
-            return Some(std::cmp::Ordering::Greater);
+            return None;
         }
     }
 }
@@ -125,5 +167,19 @@ mod tests {
     fn test_parse_rules() {
         let rules = parse_rules("47|53\n97|13\n97|61");
         assert_eq!(rules, HashMap::from([(47, vec![53]), (97, vec![13, 61]),]))
+    }
+
+    #[test]
+    fn test_part_1() {
+        let rules = parse_rules(RULES);
+        let updates = parse_updates(UPDATES, &rules);
+        assert_eq!(part_1(&updates), 143);
+    }
+
+    #[test]
+    fn test_part_2() {
+        let rules = parse_rules(RULES);
+        let mut updates = parse_updates(UPDATES, &rules);
+        assert_eq!(part_2(&mut updates), 123);
     }
 }
