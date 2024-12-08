@@ -24,7 +24,6 @@ fn part_2(input: &str) -> u32 {
     let mut result: u32 = 0;
     let pattern = Regex::new(r"(^.*?don't\(\)|do\(\).*?don't\(\)|do\(\).*$)").unwrap();
     for do_block in pattern.find_iter(input).map(|c| c.as_str()) {
-        dbg!(do_block);
         result += part_1(do_block);
     }
     result
