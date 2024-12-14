@@ -5,8 +5,8 @@ fn main() {
     let input = fs::read_to_string(path)
         .expect("Cannot solve without input!")
         .split_whitespace()
-        .map(|n| n.parse::<u64>().unwrap())
-        .collect::<Vec<u64>>();
+        .map(|n| n.parse::<u128>().unwrap())
+        .collect::<Vec<u128>>();
 
     let start_1 = Instant::now();
     println!("Part 1: {}, {:?}", solve(&input, 25), start_1.elapsed());
@@ -15,13 +15,13 @@ fn main() {
     let start_3 = Instant::now();
     println!(
         "Part 3 (just for fun): {}, {:?}",
-        solve(&input, 255),
+        solve(&input, 207),
         start_3.elapsed()
     );
 }
 
-fn solve(input: &[u64], depth: u8) -> usize {
-    let mut cache: HashMap<(u64, u8), usize> = HashMap::new();
+fn solve(input: &[u128], depth: u8) -> u128 {
+    let mut cache: HashMap<(u128, u8), u128> = HashMap::new();
     let mut length = 0;
     for stone in input {
         length += blink(*stone, depth, &mut cache);
@@ -29,7 +29,7 @@ fn solve(input: &[u64], depth: u8) -> usize {
     length
 }
 
-fn blink(stone: u64, depth: u8, cache: &mut HashMap<(u64, u8), usize>) -> usize {
+fn blink(stone: u128, depth: u8, cache: &mut HashMap<(u128, u8), u128>) -> u128 {
     if depth == 0 {
         return 1;
     }
