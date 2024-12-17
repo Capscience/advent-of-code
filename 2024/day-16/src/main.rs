@@ -1,4 +1,3 @@
-use core::panic;
 use std::{
     cmp::Reverse,
     collections::{BinaryHeap, HashMap, HashSet, VecDeque},
@@ -17,28 +16,8 @@ fn main() {
 
     let start_1 = Instant::now();
     println!("Part 1: {}, {:?}", part_1(&input), start_1.elapsed());
-    const INPUT1: &str = "###############
-#.......#....E#
-#.#.###.#.###.#
-#.....#.#...#.#
-#.###.#####.#.#
-#.#.#.......#.#
-#.#.#####.###.#
-#...........#.#
-###.#.#####.#.#
-#...#.....#.#.#
-#.#.#.###.#.#.#
-#.....#...#.#.#
-#.###.#.#.#.#.#
-#S..#.....#...#
-###############";
-
     let start_2 = Instant::now();
-    println!(
-        "Part 2: {}, {:?}",
-        part_2(&parse(INPUT1)),
-        start_2.elapsed()
-    );
+    println!("Part 2: {}, {:?}", part_2(&input), start_2.elapsed());
 }
 
 /// Dijkstra
@@ -72,10 +51,10 @@ fn part_1(graph: &Graph) -> i32 {
         .expect("Should have an answer")
 }
 
+/// Dijkstra with tracing of all best paths
 fn part_2(graph: &Graph) -> i32 {
     let mut distances = graph.init_distances();
     let mut previous = graph.init_previous();
-    let mut paths = Vec::new();
     let mut queue = BinaryHeap::new();
     queue.push(HeapEntry::new(0, graph.start));
 
@@ -89,56 +68,63 @@ fn part_2(graph: &Graph) -> i32 {
                 .get(&current.node)
                 .expect("all nodes should have a distance")
                 + weight;
-            if new_distance <= *node_distance {
-                if let Some(Some(nodes)) = previous.get_mut(&new) {
-                    nodes.push(current.node);
-                } else {
+
+            use std::cmp::Ordering::*;
+            match new_distance.cmp(node_distance) {
+                Less => {
                     previous.insert(new, Some(vec![current.node]));
+                    distances.insert(new, new_distance);
+                    queue.push(HeapEntry::new(new_distance, new));
                 }
-                distances.insert(new, new_distance);
-                queue.push(HeapEntry::new(new_distance, new));
-            }
-            if new.pos == graph.end {
-                eprintln!("Get path");
-                dbg!(&previous);
-                let path = get_path(&previous, new);
-                eprintln!("...finished!");
-                if !path.contains(&graph.start.pos) {
-                    panic!("Start not included in path!");
+                Equal => {
+                    if let Some(Some(nodes)) = previous.get_mut(&new) {
+                        nodes.push(current.node);
+                    }
                 }
-                paths.push((new_distance, path));
+                Greater => {}
             }
         }
     }
-    let min = paths.iter().map(|(length, _)| length).min().unwrap();
-    let mut tiles_on_paths: HashSet<IVec2> = HashSet::new();
-    for path in paths
-        .iter()
-        .filter_map(|(len, path)| if len == min { Some(path) } else { None })
-    {
-        tiles_on_paths.extend(path);
-    }
-    dbg!(min);
-    tiles_on_paths.len() as i32
+    let path = get_path(&previous, &distances, graph.start, graph.end);
+    path.len() as i32
 }
 
-fn get_path(previous: &HashMap<Node, Option<Vec<Node>>>, end: Node) -> HashSet<IVec2> {
-    let mut visited = HashSet::from([end.pos]);
-    let mut queue = VecDeque::from([end]);
-    while !queue.is_empty() {
-        let node = queue.pop_front().expect("while !queue.is_empty()");
-        dbg!(node);
-        if let Some(Some(prev)) = previous.get(&node) {
-            for option in prev {
-                if visited.contains(&option.pos) {
-                    continue;
-                }
-                visited.insert(option.pos);
-                queue.push_back(*option);
+fn get_path(
+    previous: &HashMap<Node, Option<Vec<Node>>>,
+    distances: &HashMap<Node, i32>,
+    start: Node,
+    end_pos: IVec2,
+) -> HashSet<IVec2> {
+    let mut min = i32::MAX;
+    let mut all_goals = Vec::new();
+    for node in DIRECTIONS.map(|dir| Node::new(end_pos, dir)) {
+        use std::cmp::Ordering::*;
+        let dist = distances.get(&node).unwrap();
+        match dist.cmp(&min) {
+            Less => {
+                min = *dist;
+                all_goals = vec![node];
             }
+            Equal => all_goals.push(node),
+            Greater => {}
         }
     }
-    visited
+    let mut visited = HashSet::new();
+    let mut queue = VecDeque::from(all_goals);
+    while !queue.is_empty() {
+        let node = queue.pop_front().expect("while !queue.is_empty()");
+        visited.insert(node);
+        if let Some(Some(prev)) = previous.get(&node) {
+            for option in prev {
+                if !visited.contains(option) {
+                    queue.push_back(*option);
+                }
+            }
+        } else if node != start {
+            panic!("Path didn't start from the Start node!");
+        }
+    }
+    visited.iter().map(|node| node.pos).collect()
 }
 
 fn parse(input: &str) -> Graph {
@@ -191,7 +177,7 @@ impl HeapEntry {
 /// Reverse ordering to get a min-heap
 impl PartialOrd for HeapEntry {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Reverse(self.distance).partial_cmp(&Reverse(other.distance))
+        Some(self.cmp(other))
     }
 }
 
